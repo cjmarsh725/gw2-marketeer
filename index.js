@@ -5,23 +5,25 @@ const uri = process.env.DB_URL;
 const client = new MongoClient(uri, { useNewUrlParser: true });
 client.connect(err => {
   const collection = client.db("gw2-marketeer").collection("item");
-  axios.get("https://api.guildwars2.com/v2/items").then(response => {
+  axios.get("https://api.guildwars2.com/v2/items?page=0&page_size=200").then(response => {
+    const totalPages = response.headers["x-page-total"];
     const requestUrls = [];
-    response.data.forEach(id => {
-      if (id > 1000 && id < 2000) requestUrls.push("https://api.guildwars2.com/v2/items/" + id);
-    });
+    for (let i = 0; i < totalPages; i++) {
+      requestUrls.push(`https://api.guildwars2.com/v2/items?page=${i}&page_size=200`);
+    }
     let requestIndex = 0;
     let interval = setInterval(() => {
-      axios.get(requestUrls[requestIndex]).then(itemResponse => {
-        const item = itemResponse.data;
-        collection.updateOne({id: item.id}, {$setOnInsert: item}, {upsert: true})
-                  .catch(error => console.log(error));
+      axios.get(requestUrls[requestIndex]).then(itemsResponse => {
+        const items = itemsResponse.data;
+        for (let i = 0; i < items.length; i++) {
+          collection.updateOne({id: items[i].id}, {$setOnInsert: items[i]}, {upsert: true})
+                    .catch(error => console.log(error));
+        }
       }).catch(error => console.log(error));
       requestIndex++;
-      if (requestIndex % 100 === 0) console.log("Request number " + requestIndex + " completed");
       if (requestIndex >= requestUrls.length) {
         clearInterval(interval);
-        console.log("Update of " + requestUrls.length + " items completed");
+        console.log("Update of " + requestUrls.length + " pages completed");
       }
     }, 150);
   }).catch(error => console.error(error));
