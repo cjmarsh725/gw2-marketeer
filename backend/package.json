@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/cjmarsh725/gw2-marketeer#readme",
   "dependencies": {
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "dotenv": "^8.0.0",
     "mongodb": "^3.3.0-beta2"
   }
